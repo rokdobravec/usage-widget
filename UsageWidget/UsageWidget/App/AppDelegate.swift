@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var activity: NSObjectProtocol?
     private var eventMonitor: Any?
     private var contextMenu: NSMenu!
+    private var viewModel: StatsViewModel?
 
     private let windowPositionXKey = "windowPositionX"
     private let windowPositionYKey = "windowPositionY"
@@ -20,10 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         setupPanel()
         setupContextMenu()
+        setupSleepWakeObservers()
     }
 
     private func setupPanel() {
         let viewModel = StatsViewModel()
+        self.viewModel = viewModel
         let contentView = ContentView(viewModel: viewModel)
             .fixedSize()
 
@@ -149,6 +152,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             menuItem.state = isLaunchAgentInstalled ? .on : .off
         }
         return true
+    }
+
+    // MARK: - Sleep/Wake
+
+    private func setupSleepWakeObservers() {
+        let ws = NSWorkspace.shared.notificationCenter
+
+        // Pause when display sleeps (lid close, lock screen, display timeout)
+        ws.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.viewModel?.pause()
+        }
+
+        // Resume when display wakes
+        ws.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.viewModel?.resume()
+        }
+
+        // Also pause/resume on full system sleep/wake
+        ws.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.viewModel?.pause()
+        }
+        ws.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.viewModel?.resume()
+        }
     }
 
 }

@@ -23,6 +23,7 @@ final class StatsViewModel {
     private var refreshTimer: Timer?
     private var lastLoadedDate: String = ""
     private var lastAPIFetch: Date = .distantPast
+    private var isPaused = false
     private let weeksToShow = 16
     private let filePath: String
     private let liveComputer = LiveStatsComputer()
@@ -47,8 +48,10 @@ final class StatsViewModel {
         // Refresh live stats every 30s, API every 60s
         // Use .common RunLoop mode so the timer fires during window drags
         let timer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
-            self?.refreshLiveStats()
+            guard let self, !self.isPaused else { return }
+            self.refreshLiveStats()
         }
+        timer.tolerance = 10 // Allow macOS to coalesce timer fires for power savings
         RunLoop.main.add(timer, forMode: .common)
         refreshTimer = timer
     }
@@ -58,6 +61,37 @@ final class StatsViewModel {
         fileWatcher = nil
         refreshTimer?.invalidate()
         refreshTimer = nil
+    }
+
+    /// Pause all background activity (display sleep, system sleep, lid close)
+    func pause() {
+        guard !isPaused else { return }
+        isPaused = true
+        fileWatcher?.stop()
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
+
+    /// Resume background activity (display wake, system wake)
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        // Restart file watcher
+        fileWatcher = FileWatcher(path: filePath) { [weak self] in
+            self?.loadData()
+        }
+        fileWatcher?.start()
+        // Restart timer
+        let timer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
+            guard let self, !self.isPaused else { return }
+            self.refreshLiveStats()
+        }
+        timer.tolerance = 10
+        RunLoop.main.add(timer, forMode: .common)
+        refreshTimer = timer
+        // Refresh immediately on wake
+        loadData()
+        fetchAPIUsage()
     }
 
     func loadData() {
