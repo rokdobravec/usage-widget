@@ -59,7 +59,9 @@ struct ScaledLayout: SwiftUI.Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard let child = subviews.first else { return .zero }
         let size = child.sizeThatFits(.unspecified)
-        return CGSize(width: size.width * scale, height: size.height * scale)
+        // Whole points only: the window snaps its frame to integral sizes, and a fractional
+        // request here would make it resize forever (stack overflow at launch).
+        return CGSize(width: (size.width * scale).rounded(.up), height: (size.height * scale).rounded(.up))
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
