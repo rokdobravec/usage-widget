@@ -17,60 +17,39 @@ enum IntensityLevel: Int, CaseIterable {
         }
     }
 
-    static func from(messageCount: Int) -> IntensityLevel {
-        switch messageCount {
-        case 0:          return .empty
-        case 1...50:     return .low
-        case 51...300:   return .medium
-        case 301...1000: return .high
-        default:         return .veryHigh
+    /// Bucket a day's token total relative to the busiest visible day (sqrt-scaled so
+    /// light days still show up next to very heavy ones).
+    static func from(tokens: Int, max maxTokens: Int) -> IntensityLevel {
+        guard tokens > 0, maxTokens > 0 else { return .empty }
+        let ratio = (Double(tokens) / Double(maxTokens)).squareRoot()
+        switch ratio {
+        case ..<0.25: return .low
+        case ..<0.5:  return .medium
+        case ..<0.75: return .high
+        default:      return .veryHigh
         }
     }
 }
 
 struct ContributionDay: Identifiable {
-    let id = UUID()
     let date: Date
-    let messageCount: Int
-    let sessionCount: Int
-    let toolCallCount: Int
+    let key: String // "yyyy-MM-dd"
+    let tokens: Int
+    let activity: Int
     let intensity: IntensityLevel
     var isToday: Bool = false
     var isFuture: Bool = false
+    var isInRange: Bool = true
+
+    var id: String { key }
 
     var tooltipText: String {
-        let dateFmt = DateFormatter()
-        dateFmt.dateFormat = "MMM d"
-        let dayFmt = DateFormatter()
-        dayFmt.dateFormat = "EEEE"
-        let dateStr = dateFmt.string(from: date)
-        let dayName = dayFmt.string(from: date)
-        if isFuture { return "\(dayName), \(dateStr)" }
-        if messageCount == 0 {
-            return "\(dayName), \(dateStr) — no activity"
+        let dateStr = date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+        if isFuture { return dateStr }
+        if tokens == 0 && activity == 0 {
+            return String(localized: "\(dateStr) — no activity")
         }
-        return "\(dayName), \(dateStr) — \(messageCount.formatted()) msgs"
-    }
-
-    static func empty(date: Date) -> ContributionDay {
-        ContributionDay(
-            date: date,
-            messageCount: 0,
-            sessionCount: 0,
-            toolCallCount: 0,
-            intensity: .empty
-        )
-    }
-
-    static func future(date: Date) -> ContributionDay {
-        ContributionDay(
-            date: date,
-            messageCount: 0,
-            sessionCount: 0,
-            toolCallCount: 0,
-            intensity: .empty,
-            isFuture: true
-        )
+        return String(localized: "\(dateStr) — \(tokens.compactFormatted) tokens")
     }
 }
 

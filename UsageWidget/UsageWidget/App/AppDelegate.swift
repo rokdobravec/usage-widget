@@ -9,10 +9,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var viewModel: StatsViewModel?
 
     private let windowPositionXKey = "windowPositionX"
-    private let windowPositionYKey = "windowPositionY"
+    private let windowTopKey = "windowTopY"
+    private var anchorTop: CGFloat = 0
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot") {
+            renderSnapshot(arguments: Array(CommandLine.arguments[(index + 1)...]))
+            return
+        }
 
         activity = ProcessInfo.processInfo.beginActivity(
             options: .userInitiatedAllowingIdleSystemSleep,
@@ -27,12 +33,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private func setupPanel() {
         let viewModel = StatsViewModel()
         self.viewModel = viewModel
-        let contentView = ContentView(viewModel: viewModel)
-            .fixedSize()
-
-        let hostingView = NSHostingView(rootView: contentView)
-        let fittingSize = hostingView.fittingSize
-        hostingView.frame = NSRect(origin: .zero, size: fittingSize)
+        let hostingController = NSHostingController(rootView: ContentView(viewModel: viewModel))
+        // Let the panel follow the SwiftUI content size (overview vs. day detail)
+        hostingController.sizingOptions = [.preferredContentSize]
+        let fittingSize = hostingController.view.fittingSize
 
         panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: fittingSize),
@@ -41,7 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             defer: false
         )
 
-        panel.contentView = hostingView
+        panel.contentViewController = hostingController
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
@@ -52,26 +56,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         panel.isRestorable = false
 
         if let x = UserDefaults.standard.object(forKey: windowPositionXKey) as? CGFloat,
-           let y = UserDefaults.standard.object(forKey: windowPositionYKey) as? CGFloat {
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
+           let top = UserDefaults.standard.object(forKey: windowTopKey) as? CGFloat {
+            panel.setFrameTopLeftPoint(NSPoint(x: x, y: top))
         } else if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let x = screenFrame.maxX - panel.frame.width - 20
             let y = screenFrame.minY + 20
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
+        anchorTop = panel.frame.maxY
 
         panel.orderFront(nil)
 
+        // Content size changes keep the top edge fixed, so the widget grows downward
         NotificationCenter.default.addObserver(
-            forName: NSView.frameDidChangeNotification,
-            object: hostingView,
+            forName: NSWindow.didResizeNotification,
+            object: panel,
             queue: .main
         ) { [weak self] _ in
             guard let self, let panel = self.panel else { return }
-            let newSize = hostingView.fittingSize
-            let origin = panel.frame.origin
-            panel.setFrame(NSRect(origin: origin, size: newSize), display: true)
+            if abs(panel.frame.maxY - self.anchorTop) > 0.5 {
+                panel.setFrameTopLeftPoint(NSPoint(x: panel.frame.minX, y: self.anchorTop))
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -80,13 +86,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            self.saveWindowPosition(self.panel.frame.origin)
+            self.anchorTop = self.panel.frame.maxY
+            self.saveWindowPosition(self.panel.frame)
         }
     }
 
-    private func saveWindowPosition(_ origin: NSPoint) {
-        UserDefaults.standard.set(origin.x, forKey: windowPositionXKey)
-        UserDefaults.standard.set(origin.y, forKey: windowPositionYKey)
+    private func saveWindowPosition(_ frame: NSRect) {
+        UserDefaults.standard.set(frame.minX, forKey: windowPositionXKey)
+        UserDefaults.standard.set(frame.maxY, forKey: windowTopKey)
+    }
+
+    // MARK: - Snapshot (debug)
+
+    /// `UsageWidget --snapshot out.png [all|30d|7d] [yyyy-MM-dd]` renders the widget to a PNG
+    /// and exits. Handy for checking numbers without Screen Recording permission.
+    private func renderSnapshot(arguments: [String]) {
+        guard let output = arguments.first else { exit(2) }
+        let viewModel = StatsViewModel()
+        viewModel.loadData()
+        Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+            guard viewModel.isLoaded else { return }
+            timer.invalidate()
+            for arg in arguments.dropFirst() {
+                if let range = UsageRange.allCases.first(where: { String(localized: $0.title) == arg || $0.rawValue == arg }) {
+                    viewModel.range = range
+                } else {
+                    viewModel.selectedDay = arg
+                }
+            }
+            let renderer = ImageRenderer(content: ContentView(viewModel: viewModel).background(Color(hex: 0x2A2624)))
+            renderer.scale = 2
+            guard let image = renderer.cgImage else { exit(1) }
+            let rep = NSBitmapImageRep(cgImage: image)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: output))
+            let s = viewModel.summary
+            print("tokens(io)=\(s.tokens.io) all=\(s.tokens.all) in=\(s.tokens.input) out=\(s.tokens.output) cacheRead=\(s.tokens.cacheRead) cacheWrite=\(s.tokens.cacheWrite) activeDays=\(s.activeDays) sessions=\(s.sessions) replies=\(s.replies) userMsgs=\(s.userMessages) models=\(s.models.map(\.model))")
+            exit(0)
+        }
     }
 
     // MARK: - Context Menu
@@ -94,8 +130,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private func setupContextMenu() {
         contextMenu = NSMenu()
 
+        let refreshItem = NSMenuItem(
+            title: String(localized: "Refresh"),
+            action: #selector(refresh(_:)),
+            keyEquivalent: "r"
+        )
+        refreshItem.target = self
+        contextMenu.addItem(refreshItem)
+
         let launchItem = NSMenuItem(
-            title: "Launch at Login",
+            title: String(localized: "Launch at Login"),
             action: #selector(toggleLaunchAtLogin(_:)),
             keyEquivalent: ""
         )
@@ -105,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         contextMenu.addItem(.separator())
 
         let quitItem = NSMenuItem(
-            title: "Quit",
+            title: String(localized: "Quit"),
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -119,6 +163,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
             return event
         }
+    }
+
+    @objc private func refresh(_ sender: NSMenuItem) {
+        viewModel?.loadData()
+        viewModel?.fetchAPIUsage()
     }
 
     // MARK: - Launch at Login (LaunchAgent plist)

@@ -41,8 +41,8 @@ UsageWidget/UsageWidget/
 
 ## Data Flow
 
-1. **Cached history**: `~/.claude/stats-cache.json` — daily message/session counts from claude-code-stats CLI
-2. **Live today**: Scans `~/.claude/projects/*/` JSONL transcript files for today's messages (30s refresh)
+1. **Usage**: `UsageScanner` reads `~/.claude/projects/**/*.jsonl` (30s refresh, per-file mtime/size cache), dedupes replies by `message.id`, aggregates tokens per local day and model
+2. **Snapshot**: `UsageWidget --snapshot out.png [all|30d|7d] [yyyy-MM-dd]` renders the view to PNG and prints totals
 3. **API rate limits**: `GET https://api.anthropic.com/api/oauth/usage` with OAuth token (60s refresh)
 4. **Plan tier**: Reads `~/.claude/.credentials.json` → `claudeAiOauth.rateLimitTier`
 

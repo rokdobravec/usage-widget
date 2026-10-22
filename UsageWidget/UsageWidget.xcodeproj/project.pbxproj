@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		506EE55F46544A7297533BBE /* UsageScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7122524D3DF480482A874AD /* UsageScanner.swift */; };
+		FB0715DAA1DD410497615B1E /* UsageModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3150D53B974116B10011C9 /* UsageModels.swift */; };
 		204B1A555303861C4935CCC1 /* ContributionDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F4559C2BDA79BDAA4450FF /* ContributionDay.swift */; };
 		2FD5D748BB7512B41BB8138F /* UsageWidgetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41728CA5FC0315125DCAC03F /* UsageWidgetApp.swift */; };
 		31F3860913EE780AA76A3349 /* LiveStatsComputer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08EF1FD9AD63D736E0EF9186 /* LiveStatsComputer.swift */; };
@@ -23,6 +25,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C7122524D3DF480482A874AD /* UsageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageScanner.swift; sourceTree = "<group>"; };
+		EA3150D53B974116B10011C9 /* UsageModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageModels.swift; sourceTree = "<group>"; };
 		015340E19C7825A1B60A9DD3 /* UsageAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageAPIClient.swift; sourceTree = "<group>"; };
 		037C562F7C9403101004A241 /* UsageWidget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UsageWidget.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		08EF1FD9AD63D736E0EF9186 /* LiveStatsComputer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStatsComputer.swift; sourceTree = "<group>"; };
@@ -67,6 +71,7 @@
 			children = (
 				228CB2981ABC0383246F3402 /* FileWatcher.swift */,
 				08EF1FD9AD63D736E0EF9186 /* LiveStatsComputer.swift */,
+				C7122524D3DF480482A874AD /* UsageScanner.swift */,
 				015340E19C7825A1B60A9DD3 /* UsageAPIClient.swift */,
 			);
 			path = Utilities;
@@ -115,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				96F4559C2BDA79BDAA4450FF /* ContributionDay.swift */,
+				EA3150D53B974116B10011C9 /* UsageModels.swift */,
 				40E606B99F884D0F6606098D /* StatsCache.swift */,
 			);
 			path = Models;
@@ -194,9 +200,11 @@
 				78F3AAE72C1D31B45910003C /* ContentView.swift in Sources */,
 				8DF8BCA42FAA30B6D9745545 /* ContributionCellView.swift in Sources */,
 				204B1A555303861C4935CCC1 /* ContributionDay.swift in Sources */,
+				FB0715DAA1DD410497615B1E /* UsageModels.swift in Sources */,
 				3AD031C54377F4A4768F5ED9 /* ContributionGraphView.swift in Sources */,
 				5697F10E635E7F259564262F /* FileWatcher.swift in Sources */,
 				31F3860913EE780AA76A3349 /* LiveStatsComputer.swift in Sources */,
+				506EE55F46544A7297533BBE /* UsageScanner.swift in Sources */,
 				E7484D23969AFD4FD070BAFA /* StatsCache.swift in Sources */,
 				C47D090028F34DCA0430AC34 /* StatsViewModel.swift in Sources */,
 				F39494CF09E8A102F5E9241A /* UsageAPIClient.swift in Sources */,
