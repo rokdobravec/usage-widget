@@ -67,6 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         anchorTop = panel.frame.maxY
         keepOnScreen()
+        applyLock(viewModel.isLocked)
+        viewModel.onLockChanged = { [weak self] in self?.applyLock($0) }
 
         panel.orderFront(nil)
 
@@ -109,6 +111,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
         anchorTop = y + frame.height
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func applyLock(_ locked: Bool) {
+        panel.isMovableByWindowBackground = !locked
+        panel.isMovable = !locked
     }
 
     private func saveWindowPosition(_ frame: NSRect) {
@@ -158,6 +165,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         refreshItem.target = self
         contextMenu.addItem(refreshItem)
 
+        let lockItem = NSMenuItem(
+            title: String(localized: "Lock Position and Size"),
+            action: #selector(toggleLock(_:)),
+            keyEquivalent: ""
+        )
+        lockItem.target = self
+        contextMenu.addItem(lockItem)
+
+        let resetSizeItem = NSMenuItem(
+            title: String(localized: "Reset Size"),
+            action: #selector(resetSize(_:)),
+            keyEquivalent: ""
+        )
+        resetSizeItem.target = self
+        contextMenu.addItem(resetSizeItem)
+
+        contextMenu.addItem(.separator())
+
         let launchItem = NSMenuItem(
             title: String(localized: "Launch at Login"),
             action: #selector(toggleLaunchAtLogin(_:)),
@@ -190,6 +215,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         viewModel?.fetchAPIUsage()
     }
 
+    @objc private func toggleLock(_ sender: NSMenuItem) {
+        viewModel?.isLocked.toggle()
+    }
+
+    @objc private func resetSize(_ sender: NSMenuItem) {
+        viewModel?.scale = 1
+    }
+
     // MARK: - Launch at Login (LaunchAgent plist)
 
     private var launchAgentURL: URL {
@@ -219,6 +252,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(toggleLaunchAtLogin(_:)) {
             menuItem.state = isLaunchAgentInstalled ? .on : .off
+        }
+        if menuItem.action == #selector(toggleLock(_:)) {
+            menuItem.state = viewModel?.isLocked == true ? .on : .off
+        }
+        if menuItem.action == #selector(resetSize(_:)) {
+            return viewModel?.isLocked == false && viewModel?.scale != 1
         }
         return true
     }

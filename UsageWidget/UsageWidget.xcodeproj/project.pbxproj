@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A5ECBBB333F84053998623ED /* ScaleGrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8C6ED131CF4F1FA9243F90 /* ScaleGrip.swift */; };
 		506EE55F46544A7297533BBE /* UsageScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7122524D3DF480482A874AD /* UsageScanner.swift */; };
 		FB0715DAA1DD410497615B1E /* UsageModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3150D53B974116B10011C9 /* UsageModels.swift */; };
 		204B1A555303861C4935CCC1 /* ContributionDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F4559C2BDA79BDAA4450FF /* ContributionDay.swift */; };
@@ -25,6 +26,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BB8C6ED131CF4F1FA9243F90 /* ScaleGrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScaleGrip.swift; sourceTree = "<group>"; };
 		C7122524D3DF480482A874AD /* UsageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageScanner.swift; sourceTree = "<group>"; };
 		EA3150D53B974116B10011C9 /* UsageModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageModels.swift; sourceTree = "<group>"; };
 		015340E19C7825A1B60A9DD3 /* UsageAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageAPIClient.swift; sourceTree = "<group>"; };
@@ -52,6 +54,7 @@
 				6771EF77980B6C90DA9D070C /* ContentView.swift */,
 				70E7087FAAE1322F83B65FBD /* ContributionCellView.swift */,
 				1705284D5B0DD4B01E9EE806 /* ContributionGraphView.swift */,
+				BB8C6ED131CF4F1FA9243F90 /* ScaleGrip.swift */,
 				4DAF5C0B28B28DA5237CD684 /* UsageLimitBarView.swift */,
 			);
 			path = Views;
@@ -202,6 +205,7 @@
 				204B1A555303861C4935CCC1 /* ContributionDay.swift in Sources */,
 				FB0715DAA1DD410497615B1E /* UsageModels.swift in Sources */,
 				3AD031C54377F4A4768F5ED9 /* ContributionGraphView.swift in Sources */,
+				A5ECBBB333F84053998623ED /* ScaleGrip.swift in Sources */,
 				5697F10E635E7F259564262F /* FileWatcher.swift in Sources */,
 				31F3860913EE780AA76A3349 /* LiveStatsComputer.swift in Sources */,
 				506EE55F46544A7297533BBE /* UsageScanner.swift in Sources */,

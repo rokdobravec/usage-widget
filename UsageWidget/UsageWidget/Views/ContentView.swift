@@ -4,6 +4,27 @@ struct ContentView: View {
     @State var viewModel: StatsViewModel
 
     var body: some View {
+        // Scale the whole card; the grip stays a constant size on top of it
+        ScaledLayout(scale: viewModel.scale) {
+            card.scaleEffect(viewModel.scale, anchor: .topLeading)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !viewModel.isLocked {
+                ScaleGrip(scale: viewModel.scale) { viewModel.scale = $0 }
+                    .frame(width: 14, height: 14)
+                    .padding(3)
+                    .help("Drag to resize")
+            }
+        }
+        .onAppear {
+            viewModel.startWatching()
+        }
+        .onDisappear {
+            viewModel.stopWatching()
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !viewModel.isLoaded {
                 Text("Loading…")
@@ -27,12 +48,22 @@ struct ContentView: View {
                 .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
         )
         .environment(\.colorScheme, .dark)
-        .onAppear {
-            viewModel.startWatching()
-        }
-        .onDisappear {
-            viewModel.stopWatching()
-        }
+    }
+}
+
+/// Reports its child's ideal size multiplied by `scale`. Paired with `.scaleEffect` on the
+/// child, the window (which follows the preferred content size) grows and shrinks with it.
+struct ScaledLayout: SwiftUI.Layout {
+    var scale: Double
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let size = child.sizeThatFits(.unspecified)
+        return CGSize(width: size.width * scale, height: size.height * scale)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: .unspecified)
     }
 }
 
@@ -58,6 +89,17 @@ struct OverviewView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button {
+                viewModel.isLocked.toggle()
+            } label: {
+                Image(systemName: viewModel.isLocked ? "lock.fill" : "lock.open")
+                    .font(.system(size: 10))
+                    .foregroundStyle(viewModel.isLocked ? .primary : .secondary)
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(viewModel.isLocked ? "Unlock position and size" : "Lock position and size")
             RangePicker(selection: $viewModel.range)
         }
 

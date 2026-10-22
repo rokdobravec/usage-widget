@@ -14,6 +14,20 @@ final class StatsViewModel {
     var planLabel: String = ""
     var isLoaded = false
 
+    static let scaleRange: ClosedRange<Double> = 0.7...1.8
+    /// Zoom factor of the whole widget, set with the resize grip
+    var scale: Double = UserDefaults.standard.object(forKey: "widgetScale") as? Double ?? 1 {
+        didSet { UserDefaults.standard.set(scale, forKey: "widgetScale") }
+    }
+    /// Locked widgets can't be moved or resized
+    var isLocked: Bool = UserDefaults.standard.bool(forKey: "widgetLocked") {
+        didSet {
+            UserDefaults.standard.set(isLocked, forKey: "widgetLocked")
+            onLockChanged?(isLocked)
+        }
+    }
+    @ObservationIgnored var onLockChanged: ((Bool) -> Void)?
+
     // Real API usage data
     var fiveHourUtil: Double = 0   // 0-100
     var sevenDayUtil: Double = 0   // 0-100
