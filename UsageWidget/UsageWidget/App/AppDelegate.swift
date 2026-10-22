@@ -59,12 +59,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
            let top = UserDefaults.standard.object(forKey: windowTopKey) as? CGFloat {
             panel.setFrameTopLeftPoint(NSPoint(x: x, y: top))
         } else if let screen = NSScreen.main {
-            let screenFrame = screen.visibleFrame
-            let x = screenFrame.maxX - panel.frame.width - 20
-            let y = screenFrame.minY + 20
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
+            // Top-right corner. The content has no size yet, so place by the widget's known
+            // width and its top edge; height changes then grow downward.
+            let visible = screen.visibleFrame
+            let width = max(panel.frame.width, Layout.width + 24)
+            panel.setFrameTopLeftPoint(NSPoint(x: visible.maxX - width - 20, y: visible.maxY - 20))
         }
         anchorTop = panel.frame.maxY
+        keepOnScreen()
 
         panel.orderFront(nil)
 
@@ -78,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             if abs(panel.frame.maxY - self.anchorTop) > 0.5 {
                 panel.setFrameTopLeftPoint(NSPoint(x: panel.frame.minX, y: self.anchorTop))
             }
+            self.keepOnScreen()
         }
 
         NotificationCenter.default.addObserver(
@@ -89,6 +92,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self.anchorTop = self.panel.frame.maxY
             self.saveWindowPosition(self.panel.frame)
         }
+    }
+
+    /// Pull the widget fully back onto the screen it overlaps most (or the main screen),
+    /// e.g. after it grew past an edge or a display was disconnected.
+    private func keepOnScreen() {
+        guard let panel else { return }
+        let frame = panel.frame
+        let screen = NSScreen.screens.max {
+            $0.visibleFrame.intersection(frame).width * $0.visibleFrame.intersection(frame).height
+                < $1.visibleFrame.intersection(frame).width * $1.visibleFrame.intersection(frame).height
+        }
+        guard let visible = (screen?.visibleFrame.intersects(frame) == true ? screen : NSScreen.main)?.visibleFrame,
+              !visible.contains(frame) else { return }
+        let x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+        let y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+        anchorTop = y + frame.height
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
     private func saveWindowPosition(_ frame: NSRect) {
